@@ -1,7 +1,7 @@
+import { wrapPromise } from "@/utils/promise";
 import { ofetch } from "ofetch";
 
 export class HttpRequest {
-  private responseClient: string = "";
   private baseUrl: string;
 
   constructor(baseUrl?: string) {
@@ -9,22 +9,23 @@ export class HttpRequest {
   }
 
   async html(url: string) {
-    try {
-      await this.fetcher(url);
-      return this.responseClient;
-    } catch (error) {
-      throw error;
+    const { res, err } = await wrapPromise(this.fetcher(url));
+    if (err) {
+      throw err;
     }
+    return res;
   }
 
   private async fetcher(url: string) {
-    try {
-      this.responseClient = await ofetch(url, {
+    const { res, err } = await wrapPromise<string>(
+      ofetch(url, {
         method: "GET",
         baseURL: this.baseUrl,
-      });
-    } catch (error) {
-      throw error;
+      }),
+    );
+    if (err) {
+      throw err;
     }
+    return res;
   }
 }
