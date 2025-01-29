@@ -24,7 +24,7 @@ const classes = {
   ANIME_BY_GENRE: ".venser .page div",
   DETAIL: ".infozingle p span",
   SYNOPSIS: ".sinopc",
-  DOWNLOAD_LINK_EPISODE: ".episodelist ul li span a",
+  DOWNLOAD_LINK_EPISODE: ".episodelist:nth(1) ul li span a",
   DOWNLOAD_LINK_BATCH: ".episodelist:nth(0) ul li span a",
 };
 
@@ -240,6 +240,14 @@ export class OtakuDesu
         downloadLinks.batch.download = download;
       });
     }
+
+    // single episode
+    $(classes.DOWNLOAD_LINK_EPISODE).map((i, e) => {
+      downloadLinks.episode.push({
+        episode: $(e).text(),
+        download: this.parseDownloadUrl($(e).attr("href") || ""),
+      });
+    });
 
     return downloadLinks;
   }
