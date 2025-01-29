@@ -1,5 +1,3 @@
-import { z } from "zod";
-
 export type TEnv = {
   OTAKU_DESU: string;
   BASE_URL: string;
