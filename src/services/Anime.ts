@@ -12,6 +12,7 @@ export class Anime {
   private env: Env;
   private providerName: string = "";
   private pageNumber: number = 0;
+  private defaultProvider = "otakudesu";
 
   private providers: Record<string, IAnimeProvider> = {
     otakudesu: OtakuDesu,
@@ -21,9 +22,9 @@ export class Anime {
     this.env = env;
   }
 
-  setQueryParam(providerName: string = "otakudesu", pageNumber: string = "0") {
-    this.providerName = providerName;
-    this.pageNumber = parseInt(pageNumber);
+  setQueryParam(providerName?: string, pageNumber?: string) {
+    this.providerName = providerName || this.defaultProvider;
+    this.pageNumber = parseInt(pageNumber || "1");
   }
 
   async getLatest(c: Context) {
@@ -115,6 +116,24 @@ export class Anime {
     const instance = new object(this.env);
     const { res, err } = await wrapPromise(
       instance.getDetail(c.req.param("anime")),
+    );
+
+    if (err) {
+      console.error(err);
+      return c.json({ error: "Internal server error" }, 505);
+    }
+
+    return c.json(res);
+  }
+
+  async getComplete(c: Context) {
+    const object = this.providers[this.providerName];
+    if (!object) {
+      return c.json({ error: "Provider not found" }, 404);
+    }
+    const instance = new object(this.env);
+    const { res, err } = await wrapPromise(
+      instance.getComplete(this.pageNumber),
     );
 
     if (err) {

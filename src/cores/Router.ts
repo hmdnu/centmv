@@ -34,9 +34,14 @@ export class Router {
       return this.anime.getByGenre(c);
     });
 
-    this.app.get("/anime/:anime", async (c) => {
+    this.app.get("/anime/detail/:anime", async (c) => {
       this.anime.setQueryParam(c.req.query("provider"));
       return this.anime.getDetail(c);
+    });
+
+    this.app.get("/anime/complete", async (c) => {
+      this.anime.setQueryParam(c.req.query("provider"), c.req.query("page"));
+      return this.anime.getComplete(c);
     });
   }
 
