@@ -14,33 +14,21 @@ import {
   TGetLatest,
 } from "./interface";
 import { IAnime } from "@/webClient/interface";
-
-const classes = {
-  CONTAINER: "ul li .detpost",
-  NAME: ".thumbz .jdlflm",
-  EPISODE: ".epz",
-  SEARCHED_ANIME: ".chivsrc h2 a",
-  GENRES: ".genres li a",
-  ANIME_BY_GENRE: ".venser .page div",
-  DETAIL: ".infozingle p span",
-  SYNOPSIS: ".sinopc",
-  DOWNLOAD_LINK_EPISODE: ".episodelist:nth(1) ul li span a",
-  DOWNLOAD_LINK_BATCH: ".episodelist:nth(0) ul li span a",
-};
+import { UrlParser } from "@/utils/UrlParser";
+import { SCRAPPING_CLASSES } from "@/constants";
 
 export class OtakuDesu
   implements
     IAnime<TGetLatest, TGetByGenre, TComplete, TFind, TGenreList, TDetail>
 {
   private httpRequest: HttpRequest;
-  private baseUrl: string;
-  private otakuDesuUrl: string;
   private loadHtml = cheerioLoad;
+  private urlParser: UrlParser;
+  private classes = SCRAPPING_CLASSES;
 
   constructor(env: Env) {
-    this.baseUrl = env.get().BASE_URL;
-    this.otakuDesuUrl = env.get().OTAKU_DESU;
-    this.httpRequest = new HttpRequest(this.otakuDesuUrl);
+    this.httpRequest = new HttpRequest(env.get().OTAKU_DESU);
+    this.urlParser = new UrlParser(env.get().OTAKU_DESU, env.get().BASE_URL);
   }
 
   async getLatest(page: number = 1) {
@@ -56,13 +44,15 @@ export class OtakuDesu
     const $ = this.loadHtml(res);
     const anime: TGetLatest[] = [];
 
-    $(classes.CONTAINER).map((i, e) => {
+    $(this.classes.CONTAINER).map((i, e) => {
       anime.push({
-        name: $(e).find(classes.NAME).text().trim(),
+        name: $(e).find(this.classes.NAME).text().trim(),
         episode: parseInt(
-          $(e).find(classes.EPISODE).text().replace("Episode", "").trim(),
+          $(e).find(this.classes.EPISODE).text().replace("Episode", "").trim(),
         ),
-        detail: this.parseDetailUrl($(e).find("a").attr("href") || ""),
+        detail: this.urlParser.parseDetailUrl(
+          $(e).find("a").attr("href") || "",
+        ),
       });
     });
 
@@ -82,10 +72,10 @@ export class OtakuDesu
     const $ = this.loadHtml(res);
     const anime: TFind[] = [];
 
-    $(classes.SEARCHED_ANIME).map((i, e) => {
+    $(this.classes.SEARCHED_ANIME).map((i, e) => {
       anime.push({
         name: $(e).text(),
-        detail: this.parseDetailUrl($(e).attr("href") || ""),
+        detail: this.urlParser.parseDetailUrl($(e).attr("href") || ""),
         status: $(e)
           .parent()
           .parent()
@@ -110,7 +100,7 @@ export class OtakuDesu
     const $ = this.loadHtml(res);
     const anime: TGetByGenre[] = [];
 
-    $(classes.ANIME_BY_GENRE)
+    $(this.classes.ANIME_BY_GENRE)
       .nextAll()
       .find(".col-anime")
       .map((i, e) => {
@@ -118,7 +108,9 @@ export class OtakuDesu
         anime.push({
           name: $(e).find(".col-anime-title a").text(),
           episode: parseInt(episode) || 0,
-          detail: this.parseDetailUrl($(e).find("a").attr("href") || ""),
+          detail: this.urlParser.parseDetailUrl(
+            $(e).find("a").attr("href") || "",
+          ),
           status:
             episode.toLowerCase() === "unknown eps" ? "ongoing" : "complete",
         });
@@ -139,11 +131,11 @@ export class OtakuDesu
     const $ = this.loadHtml(res);
     const genres: TGenreList[] = [];
 
-    $(classes.GENRES).map((i, e) => {
+    $(this.classes.GENRES).map((i, e) => {
       const href = $(e).attr("href")?.replace("genres", "anime/genre") || "";
       genres.push({
         name: $(e).text(),
-        href: this.parseGenreUrl(href),
+        href: this.urlParser.parseGenreUrl(href),
       });
     });
 
@@ -162,13 +154,15 @@ export class OtakuDesu
     const anime: TComplete[] = [];
     const $ = this.loadHtml(res);
 
-    $(classes.CONTAINER).map((i, e) => {
+    $(this.classes.CONTAINER).map((i, e) => {
       anime.push({
-        name: $(e).find(classes.NAME).text().trim(),
+        name: $(e).find(this.classes.NAME).text().trim(),
         episode: parseInt(
-          $(e).find(classes.EPISODE).text().replace("Episode", "").trim(),
+          $(e).find(this.classes.EPISODE).text().replace("Episode", "").trim(),
         ),
-        detail: this.parseDetailUrl($(e).find("a").attr("href") || ""),
+        detail: this.urlParser.parseDetailUrl(
+          $(e).find("a").attr("href") || "",
+        ),
       });
     });
 
@@ -199,19 +193,19 @@ export class OtakuDesu
     };
 
     // scrape synopsis
-    $(classes.SYNOPSIS).map((i, e) => {
+    $(this.classes.SYNOPSIS).map((i, e) => {
       const text = $(e).text();
       synopsis.push(text === "" ? "none" : text);
     });
 
     // scrape genres
-    $(classes.DETAIL)
+    $(this.classes.DETAIL)
       .last()
       .find("a")
       .map((i, e) => {
         genres.push({
           name: $(e).text(),
-          detail: this.parseGenreUrl($(e).attr("href") || ""),
+          detail: this.urlParser.parseGenreUrl($(e).attr("href") || ""),
         });
       });
 
@@ -230,25 +224,26 @@ export class OtakuDesu
     const $ = this.loadHtml(html);
 
     // batch episode
-    if ($(classes.DOWNLOAD_LINK_BATCH).contents().length === 0) {
+    if ($(this.classes.DOWNLOAD_LINK_BATCH).contents().length === 0) {
       (downloadLinks.batch as unknown as string) = "Batch is not available yet";
     } else {
-      $(classes.DOWNLOAD_LINK_BATCH).map((i, e) => {
+      $(this.classes.DOWNLOAD_LINK_BATCH).map((i, e) => {
         const episode = $(e).text();
-        const download = this.parseDownloadUrl($(e).attr("href") || "");
+        const download = this.urlParser.parseDownloadUrl(
+          $(e).attr("href") || "",
+        );
         downloadLinks.batch.episode = episode;
         downloadLinks.batch.download = download;
       });
     }
 
     // single episode
-    $(classes.DOWNLOAD_LINK_EPISODE).map((i, e) => {
+    $(this.classes.DOWNLOAD_LINK_EPISODE).map((i, e) => {
       downloadLinks.episode.push({
         episode: $(e).text(),
-        download: this.parseDownloadUrl($(e).attr("href") || ""),
+        download: this.urlParser.parseDownloadUrl($(e).attr("href") || ""),
       });
     });
-
     return downloadLinks;
   }
 
@@ -269,7 +264,7 @@ export class OtakuDesu
 
     const $ = this.loadHtml(html);
     // scrape detail from the web by order of the element because they dont provide class of each detail tag
-    $(classes.DETAIL).map((i, e) => {
+    $(this.classes.DETAIL).map((i, e) => {
       const key = Object.keys(anime)[i] as keyof TBasicDetail;
       if (!key) {
         return;
@@ -286,34 +281,18 @@ export class OtakuDesu
     return anime;
   }
 
-  private parseDetailUrl(url: string) {
-    const parsed = url
-      .split(this.otakuDesuUrl)[1]
-      .split("/")
-      .filter((e) => e !== "");
-    const parsedUrl = `/${parsed[0]}/detail/${parsed[1]}`;
+  async getDownload(type: string, anime: string) {
+    const { res, err } = await wrapPromise(
+      this.httpRequest.html(`/${type}/${anime}`),
+    );
 
-    return this.baseUrl + parsedUrl;
-  }
-
-  private parseGenreUrl(url: string) {
-    if (!url.includes(this.otakuDesuUrl)) {
-      return this.baseUrl + url.slice(0, -1);
+    if (err) {
+      console.error(err);
+      throw err;
     }
+    const $ = this.loadHtml(res);
+    const downloads: any[] = [];
 
-    if (url.match(/\bgenres?\b/)) {
-      const parsed = url
-        .split(this.otakuDesuUrl)[1]
-        .split("/")
-        .filter((e) => e !== "");
-      const parsedUrl = `/anime/${parsed[0].slice(0, -1)}/${parsed[1]}`;
-      return this.baseUrl + parsedUrl;
-    }
-
-    return "";
-  }
-
-  private parseDownloadUrl(url: string) {
-    return this.baseUrl + "/download" + url.split(this.otakuDesuUrl)[1];
+    return downloads;
   }
 }
