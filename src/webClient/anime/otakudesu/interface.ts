@@ -56,3 +56,14 @@ export type TGenre = {
   name: string;
   detail: string;
 };
+
+export type TDownloadProvider = {
+  name: string;
+  url: string;
+};
+
+export interface TDownloadUrl {
+  resolution: string;
+  providers: TDownloadProvider[];
+  size: string;
+}

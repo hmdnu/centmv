@@ -7,6 +7,8 @@ import {
   TComplete,
   TDetail,
   TDownload,
+  TDownloadProvider,
+  TDownloadUrl,
   TFind,
   TGenre,
   TGenreList,
@@ -15,7 +17,7 @@ import {
 } from "./interface";
 import { IAnime } from "@/webClient/interface";
 import { UrlParser } from "@/utils/UrlParser";
-import { SCRAPPING_CLASSES } from "@/constants";
+import { SCRAPPING_CLASSES_OTAKUDESU as CLASS } from "@/constants";
 
 export class OtakuDesu
   implements
@@ -24,7 +26,6 @@ export class OtakuDesu
   private httpRequest: HttpRequest;
   private loadHtml = cheerioLoad;
   private urlParser: UrlParser;
-  private classes = SCRAPPING_CLASSES;
 
   constructor(env: Env) {
     this.httpRequest = new HttpRequest(env.get().OTAKU_DESU);
@@ -41,14 +42,14 @@ export class OtakuDesu
       throw err;
     }
 
-    const $ = this.loadHtml(res);
+    const $ = this.loadHtml(String(res));
     const anime: TGetLatest[] = [];
 
-    $(this.classes.CONTAINER).map((i, e) => {
+    $(CLASS.CONTAINER).map((i, e) => {
       anime.push({
-        name: $(e).find(this.classes.NAME).text().trim(),
+        name: $(e).find(CLASS.NAME).text().trim(),
         episode: parseInt(
-          $(e).find(this.classes.EPISODE).text().replace("Episode", "").trim(),
+          $(e).find(CLASS.EPISODE).text().replace("Episode", "").trim(),
         ),
         detail: this.urlParser.parseDetailUrl(
           $(e).find("a").attr("href") || "",
@@ -69,10 +70,10 @@ export class OtakuDesu
       throw err;
     }
 
-    const $ = this.loadHtml(res);
+    const $ = this.loadHtml(String(res));
     const anime: TFind[] = [];
 
-    $(this.classes.SEARCHED_ANIME).map((i, e) => {
+    $(CLASS.SEARCHED_ANIME).map((i, e) => {
       anime.push({
         name: $(e).text(),
         detail: this.urlParser.parseDetailUrl($(e).attr("href") || ""),
@@ -97,10 +98,10 @@ export class OtakuDesu
       console.error(err);
       throw err;
     }
-    const $ = this.loadHtml(res);
+    const $ = this.loadHtml(String(res));
     const anime: TGetByGenre[] = [];
 
-    $(this.classes.ANIME_BY_GENRE)
+    $(CLASS.ANIME_BY_GENRE)
       .nextAll()
       .find(".col-anime")
       .map((i, e) => {
@@ -128,10 +129,10 @@ export class OtakuDesu
       console.error(err);
       throw err;
     }
-    const $ = this.loadHtml(res);
+    const $ = this.loadHtml(String(res));
     const genres: TGenreList[] = [];
 
-    $(this.classes.GENRES).map((i, e) => {
+    $(CLASS.GENRES).map((i, e) => {
       const href = $(e).attr("href")?.replace("genres", "anime/genre") || "";
       genres.push({
         name: $(e).text(),
@@ -152,13 +153,13 @@ export class OtakuDesu
       throw err;
     }
     const anime: TComplete[] = [];
-    const $ = this.loadHtml(res);
+    const $ = this.loadHtml(String(res));
 
-    $(this.classes.CONTAINER).map((i, e) => {
+    $(CLASS.CONTAINER).map((i, e) => {
       anime.push({
-        name: $(e).find(this.classes.NAME).text().trim(),
+        name: $(e).find(CLASS.NAME).text().trim(),
         episode: parseInt(
-          $(e).find(this.classes.EPISODE).text().replace("Episode", "").trim(),
+          $(e).find(CLASS.EPISODE).text().replace("Episode", "").trim(),
         ),
         detail: this.urlParser.parseDetailUrl(
           $(e).find("a").attr("href") || "",
@@ -179,7 +180,7 @@ export class OtakuDesu
       throw err;
     }
 
-    const $ = this.loadHtml(res);
+    const $ = this.loadHtml(String(res));
     const synopsis: string[] = [];
     const downloadLinks: TDownload = this.extractDownlodLinks(res || "");
     const detail = this.extractDetail(res || "");
@@ -193,13 +194,13 @@ export class OtakuDesu
     };
 
     // scrape synopsis
-    $(this.classes.SYNOPSIS).map((i, e) => {
+    $(CLASS.SYNOPSIS).map((i, e) => {
       const text = $(e).text();
       synopsis.push(text === "" ? "none" : text);
     });
 
     // scrape genres
-    $(this.classes.DETAIL)
+    $(CLASS.DETAIL)
       .last()
       .find("a")
       .map((i, e) => {
@@ -224,10 +225,10 @@ export class OtakuDesu
     const $ = this.loadHtml(html);
 
     // batch episode
-    if ($(this.classes.DOWNLOAD_LINK_BATCH).contents().length === 0) {
+    if ($(CLASS.DOWNLOAD_LINK_BATCH).contents().length === 0) {
       (downloadLinks.batch as unknown as string) = "Batch is not available yet";
     } else {
-      $(this.classes.DOWNLOAD_LINK_BATCH).map((i, e) => {
+      $(CLASS.DOWNLOAD_LINK_BATCH).map((i, e) => {
         const episode = $(e).text();
         const download = this.urlParser.parseDownloadUrl(
           $(e).attr("href") || "",
@@ -238,7 +239,7 @@ export class OtakuDesu
     }
 
     // single episode
-    $(this.classes.DOWNLOAD_LINK_EPISODE).map((i, e) => {
+    $(CLASS.DOWNLOAD_LINK_EPISODE).map((i, e) => {
       downloadLinks.episode.push({
         episode: $(e).text(),
         download: this.urlParser.parseDownloadUrl($(e).attr("href") || ""),
@@ -264,7 +265,7 @@ export class OtakuDesu
 
     const $ = this.loadHtml(html);
     // scrape detail from the web by order of the element because they dont provide class of each detail tag
-    $(this.classes.DETAIL).map((i, e) => {
+    $(CLASS.DETAIL).map((i, e) => {
       const key = Object.keys(anime)[i] as keyof TBasicDetail;
       if (!key) {
         return;
@@ -281,6 +282,12 @@ export class OtakuDesu
     return anime;
   }
 
+  async getDownloadBatch(anime: string) {
+    const { res, err } = await wrapPromise(
+      this.httpRequest.html(`/batch/${anime}`),
+    );
+  }
+
   async getDownload(type: string, anime: string) {
     const { res, err } = await wrapPromise(
       this.httpRequest.html(`/${type}/${anime}`),
@@ -290,9 +297,43 @@ export class OtakuDesu
       console.error(err);
       throw err;
     }
-    const $ = this.loadHtml(res);
-    const downloads: any[] = [];
+    const $ = this.loadHtml(String(res));
+    const download = this.extractDownloadProviderUrl(String(res), type);
+    const streamUrl = $(CLASS.IFRAME_CONTAINER).attr("src") || "";
+    return {
+      download,
+      stream: streamUrl,
+    };
+  }
 
+  private extractDownloadProviderUrl(html: string, type: string) {
+    const downloads: TDownloadUrl[] = [];
+    const $ = this.loadHtml(String(html));
+    const downloadTypeClass = this.getDownloadTypeClass(type);
+
+    $(downloadTypeClass).map((i, e) => {
+      const providers: TDownloadProvider[] = [];
+
+      $(e)
+        .find(CLASS.DOWNLOADS.ANCHOR)
+        .map((i, e) => {
+          providers.push({ name: $(e).text(), url: $(e).attr("href") || "" });
+        }),
+        downloads.push({
+          resolution: $(e).find(CLASS.DOWNLOADS.RESO).text(),
+          size: $(e).find(CLASS.DOWNLOADS.SIZE).text(),
+          providers,
+        });
+    });
     return downloads;
+  }
+
+  private getDownloadTypeClass(type: string) {
+    if (type === "episode") {
+      return CLASS.DOWNLOADS.EPISODE;
+    } else if (type === "batch") {
+      return CLASS.DOWNLOADS.BATCH;
+    }
+    return "<unknown type>";
   }
 }
