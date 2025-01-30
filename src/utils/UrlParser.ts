@@ -35,6 +35,10 @@ export class UrlParser {
   }
 
   parseDownloadUrl(url: string) {
-    return this.baseUrl + "/download" + url.split(this.providerUrl)[1];
+    return (
+      this.baseUrl +
+      "/anime/download" +
+      url.split(this.providerUrl)[1].slice(0, -1)
+    );
   }
 }
