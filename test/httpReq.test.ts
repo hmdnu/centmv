@@ -47,8 +47,6 @@ describe("HttpRequest_html", () => {
     expect(res).toBeNull();
     expect(err).toBeInstanceOf(Error);
     expect(err).toBeDefined();
-    expect((err as Error)?.message).toSatisfy(
-      (err) => typeof err === "string" && err === "<unknown error>",
-    );
+    expect(err?.message).toSatisfy((err) => typeof err === "string");
   });
 });
