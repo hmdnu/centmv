@@ -1,8 +1,8 @@
-import { ErrorFetcher } from "./Error";
+import { FetchError } from "node_modules/ofetch/dist/node.cjs";
 
 type TPromise<T> = {
   res: T | null;
-  err: ErrorFetcher | Error | string | null;
+  err: Error | null;
 };
 
 export async function wrapPromise<T>(
@@ -10,15 +10,14 @@ export async function wrapPromise<T>(
 ): Promise<TPromise<T>> {
   try {
     const data = await promise;
-
     return { res: data, err: null };
   } catch (error) {
-    if (error instanceof ErrorFetcher) {
+    if (error instanceof FetchError) {
       return { res: null, err: error };
     }
     if (error instanceof Error) {
       return { res: null, err: error };
     }
-    return { res: null, err: "<Unknown Error>" };
+    return { res: null, err: new Error("<unknown error>") };
   }
 }
