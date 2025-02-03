@@ -2,28 +2,24 @@ import { HttpRequest } from "@/cores/HttpRequest";
 import { Env } from "@/env";
 import { wrapPromise } from "@/utils/promise";
 import { load as cheerioLoad } from "cheerio";
-import {
-  TBasicDetail,
-  TComplete,
-  TDetail,
-  TDownload,
-  TDownloadProvider,
-  TDownloadUrl,
-  TFind,
-  TGenre,
-  TGenreList,
-  TGetByGenre,
-  TGetLatest,
-} from "./interface";
+import * as _interface from "./interface";
 import { IAnime } from "@/webClient/interface";
 import { UrlParser } from "@/utils/UrlParser";
 import { SCRAPPING_CLASSES_OTAKUDESU as CLASS } from "@/constants";
 
 export class OtakuDesu
   implements
-    IAnime<TGetLatest, TGetByGenre, TComplete, TFind, TGenreList, TDetail>
+    IAnime<
+      _interface.TGetLatest,
+      _interface.TGetByGenre,
+      _interface.TComplete,
+      _interface.TFind,
+      _interface.TGenreList,
+      _interface.TDetail,
+      _interface.TGetDownload
+    >
 {
-  private httpRequest: HttpRequest;
+  protected httpRequest: HttpRequest;
   private loadHtml = cheerioLoad;
   private urlParser: UrlParser;
 
@@ -43,7 +39,7 @@ export class OtakuDesu
     }
 
     const $ = this.loadHtml(String(res));
-    const anime: TGetLatest[] = [];
+    const anime: _interface.TGetLatest[] = [];
 
     $(CLASS.CONTAINER).map((i, e) => {
       anime.push({
@@ -71,7 +67,7 @@ export class OtakuDesu
     }
 
     const $ = this.loadHtml(String(res));
-    const anime: TFind[] = [];
+    const anime: _interface.TFind[] = [];
 
     $(CLASS.SEARCHED_ANIME).map((i, e) => {
       anime.push({
@@ -99,7 +95,7 @@ export class OtakuDesu
       throw err;
     }
     const $ = this.loadHtml(String(res));
-    const anime: TGetByGenre[] = [];
+    const anime: _interface.TGetByGenre[] = [];
 
     $(CLASS.ANIME_BY_GENRE)
       .nextAll()
@@ -130,7 +126,7 @@ export class OtakuDesu
       throw err;
     }
     const $ = this.loadHtml(String(res));
-    const genres: TGenreList[] = [];
+    const genres: _interface.TGenreList[] = [];
 
     $(CLASS.GENRES).map((i, e) => {
       const href = $(e).attr("href")?.replace("genres", "anime/genre") || "";
@@ -152,7 +148,7 @@ export class OtakuDesu
       console.error(err);
       throw err;
     }
-    const anime: TComplete[] = [];
+    const anime: _interface.TComplete[] = [];
     const $ = this.loadHtml(String(res));
 
     $(CLASS.CONTAINER).map((i, e) => {
@@ -182,11 +178,13 @@ export class OtakuDesu
 
     const $ = this.loadHtml(String(res));
     const synopsis: string[] = [];
-    const downloadLinks: TDownload = this.extractDownlodLinks(res || "");
+    const downloadLinks: _interface.TDownload = this.extractDownlodLinks(
+      res || "",
+    );
     const detail = this.extractDetail(res || "");
-    const genres: TGenre[] = [];
+    const genres: _interface.TGenre[] = [];
 
-    const anime: TDetail = {
+    const anime: _interface.TDetail = {
       ...detail,
       genre: genres,
       synopsis,
@@ -214,7 +212,7 @@ export class OtakuDesu
   }
 
   private extractDownlodLinks(html: string) {
-    const downloadLinks: TDownload = {
+    const downloadLinks: _interface.TDownload = {
       batch: {
         episode: "",
         download: "",
@@ -250,7 +248,7 @@ export class OtakuDesu
 
   private extractDetail(html: string) {
     // in order to get the detail dont change the order of the property
-    const anime: TBasicDetail = {
+    const anime: _interface.TBasicDetail = {
       name: "",
       nameJapanese: "",
       score: 0,
@@ -266,7 +264,7 @@ export class OtakuDesu
     const $ = this.loadHtml(html);
     // scrape detail from the web by order of the element because they dont provide class of each detail tag
     $(CLASS.DETAIL).map((i, e) => {
-      const key = Object.keys(anime)[i] as keyof TBasicDetail;
+      const key = Object.keys(anime)[i] as keyof _interface.TBasicDetail;
       if (!key) {
         return;
       }
@@ -282,12 +280,6 @@ export class OtakuDesu
     return anime;
   }
 
-  async getDownloadBatch(anime: string) {
-    const { res, err } = await wrapPromise(
-      this.httpRequest.html(`/batch/${anime}`),
-    );
-  }
-
   async getDownload(type: string, anime: string) {
     const { res, err } = await wrapPromise(
       this.httpRequest.html(`/${type}/${anime}`),
@@ -299,20 +291,18 @@ export class OtakuDesu
     }
     const $ = this.loadHtml(String(res));
     const download = this.extractDownloadProviderUrl(String(res), type);
-    const streamUrl = $(CLASS.IFRAME_CONTAINER).attr("src") || "";
-    return {
-      download,
-      stream: streamUrl,
-    };
+    const stream = $(CLASS.IFRAME_CONTAINER).attr("src") || "";
+
+    return { download, stream };
   }
 
   private extractDownloadProviderUrl(html: string, type: string) {
-    const downloads: TDownloadUrl[] = [];
+    const downloads: _interface.TDownloadUrl[] = [];
     const $ = this.loadHtml(String(html));
     const downloadTypeClass = this.getDownloadTypeClass(type);
 
     $(downloadTypeClass).map((i, e) => {
-      const providers: TDownloadProvider[] = [];
+      const providers: _interface.TDownloadProvider[] = [];
 
       $(e)
         .find(CLASS.DOWNLOADS.ANCHOR)

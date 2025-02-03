@@ -22,7 +22,7 @@ export interface TGetByGenre extends TGetLatest {
 export interface TComplete extends TGetLatest {}
 
 // DONT CHANGE PROPERTY ORDER!!!
-export interface TBasicDetail {
+export type TBasicDetail = {
   name: string;
   nameJapanese: string;
   score: number;
@@ -33,7 +33,7 @@ export interface TBasicDetail {
   duration: string;
   releaseDate: string;
   studio: string;
-}
+};
 
 export interface TDetail extends TBasicDetail {
   genre: TGenre[];
@@ -67,3 +67,8 @@ export interface TDownloadUrl {
   providers: TDownloadProvider[];
   size: string;
 }
+
+export type TGetDownload = {
+  download: TDownloadUrl[];
+  stream: string;
+};
