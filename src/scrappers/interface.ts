@@ -1,7 +1,26 @@
+export interface IAnime<
+  TLatest,
+  TByGenre,
+  TComplete,
+  TFind,
+  TGenreList,
+  TDetail,
+  TDownload,
+> {
+  getLatest(page: number): Promise<TLatest[]>;
+  getByGenre(genre: string, page: number): Promise<TByGenre[]>;
+  getComplete(page: number): Promise<TComplete[]>;
+  find(anime: string): Promise<TFind[]>;
+  getGenres(): Promise<TGenreList[]>;
+  getDetail(name: string): Promise<TDetail>;
+  getDownload(type: string, anime: string): Promise<TDownload>;
+}
+
 export type TGetLatest = {
   name: string;
   episode: number;
   detail: string;
+  img: string;
 };
 
 export type TFind = {
@@ -21,16 +40,10 @@ export interface TGetByGenre extends TGetLatest {
 
 export interface TComplete extends TGetLatest {}
 
-// DONT CHANGE PROPERTY ORDER!!!
 export type TBasicDetail = {
   name: string;
-  nameJapanese: string;
-  score: number;
-  producer: string;
   type: string;
   status: string;
-  totalEpisode: string;
-  duration: string;
   releaseDate: string;
   studio: string;
 };
@@ -45,7 +58,7 @@ export type TDownload = {
   batch: {
     episode: string;
     download: string;
-  };
+  } | null;
   episode: {
     episode: string;
     download: string;

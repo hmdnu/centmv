@@ -1,4 +1,4 @@
-export class UrlParser {
+export class UrlParserOtakudesu {
   private providerUrl: string;
   private baseUrl: string;
 

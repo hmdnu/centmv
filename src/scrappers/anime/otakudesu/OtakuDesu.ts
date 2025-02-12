@@ -1,13 +1,16 @@
 import { HttpRequest } from "@/cores/HttpRequest";
 import { Env } from "@/env";
 import { wrapPromise } from "@/utils/promise";
-import { load as cheerioLoad } from "cheerio";
-import * as _interface from "./interface";
-import { IAnime } from "@/webClient/interface";
-import { UrlParser } from "@/utils/UrlParser";
+import { Cheerio, CheerioAPI, load as cheerioLoad } from "cheerio";
+import * as _interface from "@/scrappers/interface";
+import { IAnime } from "@/scrappers/interface";
+import { UrlParserOtakudesu } from "@/utils/urlParser/UrlParserOtakudesu";
 import { SCRAPPING_CLASSES_OTAKUDESU as CLASS } from "@/constants";
+import { BaseAnimeSrapper } from "@/structs/BaseAnimeScrapper";
+import { AnyNode } from "node_modules/domhandler/lib/esm/node";
 
 export class OtakuDesu
+  extends BaseAnimeSrapper
   implements
     IAnime<
       _interface.TGetLatest,
@@ -19,36 +22,36 @@ export class OtakuDesu
       _interface.TGetDownload
     >
 {
-  protected httpRequest: HttpRequest;
   private loadHtml = cheerioLoad;
-  private urlParser: UrlParser;
+  private urlParser: UrlParserOtakudesu;
 
   constructor(env: Env) {
-    this.httpRequest = new HttpRequest(env.get().OTAKU_DESU);
-    this.urlParser = new UrlParser(env.get().OTAKU_DESU, env.get().BASE_URL);
+    super(env.get().OTAKU_DESU);
+    this.urlParser = new UrlParserOtakudesu(
+      env.get().OTAKU_DESU,
+      env.get().BASE_URL,
+    );
   }
 
   async getLatest(page: number = 1) {
     const { res, err } = await wrapPromise(
-      this.httpRequest.html(`/ongoing-anime/page/${page}`),
+      this.html(`/ongoing-anime/page/${page}`),
     );
-
     if (err) {
       console.error(err);
       throw err;
     }
-
     const $ = this.loadHtml(String(res));
     const anime: _interface.TGetLatest[] = [];
-
     $(CLASS.CONTAINER).map((i, e) => {
       anime.push({
         name: $(e).find(CLASS.NAME).text().trim(),
         episode: parseInt(
           $(e).find(CLASS.EPISODE).text().replace("Episode", "").trim(),
         ),
+        img: $(e).find(CLASS.IMAGE).attr("src") || "<none>",
         detail: this.urlParser.parseDetailUrl(
-          $(e).find("a").attr("href") || "",
+          $(e).find("a").attr("href") || "<none>",
         ),
       });
     });
@@ -58,7 +61,7 @@ export class OtakuDesu
 
   async find(animeTitle: string) {
     const { res, err } = await wrapPromise(
-      this.httpRequest.html(`/?s=${animeTitle}&post_type=anime`),
+      this.html(`/?s=${animeTitle}&post_type=anime`),
     );
 
     if (err) {
@@ -72,7 +75,7 @@ export class OtakuDesu
     $(CLASS.SEARCHED_ANIME).map((i, e) => {
       anime.push({
         name: $(e).text(),
-        detail: this.urlParser.parseDetailUrl($(e).attr("href") || ""),
+        detail: this.urlParser.parseDetailUrl($(e).attr("href") || "<none>"),
         status: $(e)
           .parent()
           .parent()
@@ -87,7 +90,7 @@ export class OtakuDesu
   }
   async getByGenre(genre: string, page: number) {
     const { res, err } = await wrapPromise(
-      this.httpRequest.html(`/genres/${genre}/page/${page}`),
+      this.html(`/genres/${genre}/page/${page}`),
     );
 
     if (err) {
@@ -105,8 +108,9 @@ export class OtakuDesu
         anime.push({
           name: $(e).find(".col-anime-title a").text(),
           episode: parseInt(episode) || 0,
+          img: $(e).find(".col-anime-cover img").attr("src") || "<none>",
           detail: this.urlParser.parseDetailUrl(
-            $(e).find("a").attr("href") || "",
+            $(e).find("a").attr("href") || "<none>",
           ),
           status:
             episode.toLowerCase() === "unknown eps" ? "ongoing" : "complete",
@@ -117,10 +121,7 @@ export class OtakuDesu
   }
 
   async getGenres() {
-    const { res, err } = await wrapPromise(
-      this.httpRequest.html("/genre-list"),
-    );
-
+    const { res, err } = await wrapPromise(this.html("/genre-list"));
     if (err) {
       console.error(err);
       throw err;
@@ -129,7 +130,8 @@ export class OtakuDesu
     const genres: _interface.TGenreList[] = [];
 
     $(CLASS.GENRES).map((i, e) => {
-      const href = $(e).attr("href")?.replace("genres", "anime/genre") || "";
+      const href =
+        $(e).attr("href")?.replace("genres", "anime/genre") || "<none>";
       genres.push({
         name: $(e).text(),
         href: this.urlParser.parseGenreUrl(href),
@@ -141,7 +143,7 @@ export class OtakuDesu
 
   async getComplete(page: number) {
     const { res, err } = await wrapPromise(
-      this.httpRequest.html(`/complete-anime/page/${page}`),
+      this.html(`/complete-anime/page/${page}`),
     );
 
     if (err) {
@@ -157,8 +159,9 @@ export class OtakuDesu
         episode: parseInt(
           $(e).find(CLASS.EPISODE).text().replace("Episode", "").trim(),
         ),
+        img: $(e).find(CLASS.IMAGE).attr("src") || "<none>",
         detail: this.urlParser.parseDetailUrl(
-          $(e).find("a").attr("href") || "",
+          $(e).find("a").attr("href") || "<none>",
         ),
       });
     });
@@ -167,9 +170,7 @@ export class OtakuDesu
   }
 
   async getDetail(name: string) {
-    const { res, err } = await wrapPromise(
-      this.httpRequest.html(`/anime/${name}`),
-    );
+    const { res, err } = await wrapPromise(this.html(`/anime/${name}`));
 
     if (err) {
       console.error(err);
@@ -181,7 +182,7 @@ export class OtakuDesu
     const downloadLinks: _interface.TDownload = this.extractDownlodLinks(
       res || "",
     );
-    const detail = this.extractDetail(res || "");
+    const detail = this.extractDetail(res || "<none>");
     const genres: _interface.TGenre[] = [];
 
     const anime: _interface.TDetail = {
@@ -221,7 +222,6 @@ export class OtakuDesu
     };
 
     const $ = this.loadHtml(html);
-
     // batch episode
     if ($(CLASS.DOWNLOAD_LINK_BATCH).contents().length === 0) {
       (downloadLinks.batch as unknown as string) = "Batch is not available yet";
@@ -231,8 +231,11 @@ export class OtakuDesu
         const download = this.urlParser.parseDownloadUrl(
           $(e).attr("href") || "",
         );
-        downloadLinks.batch.episode = episode;
-        downloadLinks.batch.download = download;
+
+        if (downloadLinks.batch) {
+          downloadLinks.batch.episode = episode;
+          downloadLinks.batch.download = download;
+        }
       });
     }
 
@@ -247,43 +250,32 @@ export class OtakuDesu
   }
 
   private extractDetail(html: string) {
-    // in order to get the detail dont change the order of the property
     const anime: _interface.TBasicDetail = {
       name: "",
-      nameJapanese: "",
-      score: 0,
-      producer: "",
       type: "",
       status: "",
-      totalEpisode: "",
-      duration: "",
       releaseDate: "",
       studio: "",
     };
 
     const $ = this.loadHtml(html);
-    // scrape detail from the web by order of the element because they dont provide class of each detail tag
     $(CLASS.DETAIL).map((i, e) => {
-      const key = Object.keys(anime)[i] as keyof _interface.TBasicDetail;
-      if (!key) {
-        return;
-      }
-      const text = $(e)
-        .contents()
-        .filter((_, e) => e.type === "text")
-        .text()
-        .replace(/^:\s*/, "");
-
-      anime[key] = text as never;
+      anime.name = this.splitColonStringDetail($, e, 0);
+      anime.type = this.splitColonStringDetail($, e, 4);
+      anime.status = this.splitColonStringDetail($, e, 5);
+      anime.releaseDate = this.splitColonStringDetail($, e, 8);
+      anime.studio = this.splitColonStringDetail($, e, 9);
     });
 
     return anime;
   }
 
+  private splitColonStringDetail($: CheerioAPI, e: AnyNode, index: number) {
+    return $(e).find(`p:nth(${index})`).text().split(":")[1].trim();
+  }
+
   async getDownload(type: string, anime: string) {
-    const { res, err } = await wrapPromise(
-      this.httpRequest.html(`/${type}/${anime}`),
-    );
+    const { res, err } = await wrapPromise(this.html(`/${type}/${anime}`));
 
     if (err) {
       console.error(err);
@@ -303,7 +295,6 @@ export class OtakuDesu
 
     $(downloadTypeClass).map((i, e) => {
       const providers: _interface.TDownloadProvider[] = [];
-
       $(e)
         .find(CLASS.DOWNLOADS.ANCHOR)
         .map((i, e) => {

@@ -1,9 +1,9 @@
-import { OtakuDesu } from "@/webClient/anime/otakudesu/OtakuDesu";
-import { Env } from "../env";
+import { Env } from "@/env";
 import { Context } from "hono";
 import { wrapPromise } from "@/utils/promise";
-import { Kusonime } from "@/webClient/anime/kusonime/Kusonime";
 import { BaseAnimeService } from "@/structs/BaseAnimeService";
+import { Animasu } from "@/scrappers/anime/animasu/Animasu";
+import { OtakuDesu } from "@/scrappers/anime/otakudesu/OtakuDesu";
 
 export class AnimeService extends BaseAnimeService {
   private providerName: string = "";
@@ -13,7 +13,7 @@ export class AnimeService extends BaseAnimeService {
   constructor(env: Env) {
     super({
       otakudesu: new OtakuDesu(env),
-      kusonime: new Kusonime(env),
+      animasu: new Animasu(env),
     });
   }
 

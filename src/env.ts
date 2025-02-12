@@ -1,6 +1,8 @@
 export type TEnv = {
   OTAKU_DESU: string;
+  KUSONIME: string;
   BASE_URL: string;
+  ANIMASU: string;
 };
 
 export class Env {

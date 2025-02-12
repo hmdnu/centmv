@@ -1,11 +1,11 @@
-import { Kusonime } from "@/webClient/anime/kusonime/Kusonime";
-import { OtakuDesu } from "@/webClient/anime/otakudesu/OtakuDesu";
+import { Animasu } from "@/scrappers/anime/animasu/Animasu";
+import { OtakuDesu } from "@/scrappers/anime/otakudesu/OtakuDesu";
 
-type TProvider = OtakuDesu | Kusonime;
+type TProvider = OtakuDesu | Animasu;
 
 type TConstructor = {
   otakudesu: OtakuDesu;
-  kusonime: Kusonime;
+  animasu: Animasu;
 };
 
 export abstract class BaseAnimeService {
