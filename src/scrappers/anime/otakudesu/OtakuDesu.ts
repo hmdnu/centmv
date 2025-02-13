@@ -62,6 +62,7 @@ export class OtakuDesu extends BaseAnimeSrapper implements IAnime {
     $(CLASS.SEARCHED_ANIME).map((i, e) => {
       anime.push({
         name: $(e).text(),
+        img: "",
         detail: this.urlParser.parseDetailUrl($(e).attr("href") || "<none>"),
         status: $(e)
           .parent()
@@ -170,6 +171,7 @@ export class OtakuDesu extends BaseAnimeSrapper implements IAnime {
 
     const anime: _interface.TDetail = {
       ...detail,
+      img: $(".fotoanime img").attr("src") || "<none>",
       genre: genres,
       synopsis,
       download: downloadLinks,
@@ -189,7 +191,6 @@ export class OtakuDesu extends BaseAnimeSrapper implements IAnime {
           detail: this.urlParser.parseGenreUrl($(e).attr("href") || ""),
         });
       });
-
     return anime;
   }
 

@@ -20,6 +20,7 @@ export type TFind = {
   name: string;
   detail: string;
   status: string;
+  img: string;
 };
 
 export type TGenreList = {
@@ -45,6 +46,7 @@ export interface TDetail extends TBasicDetail {
   genre: TGenre[];
   synopsis: string[];
   download: TDownload;
+  img: string;
 }
 
 export type TDownload = {
