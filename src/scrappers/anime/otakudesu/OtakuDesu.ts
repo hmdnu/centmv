@@ -1,7 +1,6 @@
-import { HttpRequest } from "@/cores/HttpRequest";
 import { Env } from "@/env";
 import { wrapPromise } from "@/utils/promise";
-import { Cheerio, CheerioAPI, load as cheerioLoad } from "cheerio";
+import { CheerioAPI, load as cheerioLoad } from "cheerio";
 import * as _interface from "@/scrappers/interface";
 import { IAnime } from "@/scrappers/interface";
 import { UrlParserOtakudesu } from "@/utils/urlParser/UrlParserOtakudesu";
@@ -9,19 +8,7 @@ import { SCRAPPING_CLASSES_OTAKUDESU as CLASS } from "@/constants";
 import { BaseAnimeSrapper } from "@/structs/BaseAnimeScrapper";
 import { AnyNode } from "node_modules/domhandler/lib/esm/node";
 
-export class OtakuDesu
-  extends BaseAnimeSrapper
-  implements
-    IAnime<
-      _interface.TGetLatest,
-      _interface.TGetByGenre,
-      _interface.TComplete,
-      _interface.TFind,
-      _interface.TGenreList,
-      _interface.TDetail,
-      _interface.TGetDownload
-    >
-{
+export class OtakuDesu extends BaseAnimeSrapper implements IAnime {
   private loadHtml = cheerioLoad;
   private urlParser: UrlParserOtakudesu;
 
@@ -171,17 +158,13 @@ export class OtakuDesu
 
   async getDetail(name: string) {
     const { res, err } = await wrapPromise(this.html(`/anime/${name}`));
-
     if (err) {
       console.error(err);
       throw err;
     }
-
     const $ = this.loadHtml(String(res));
     const synopsis: string[] = [];
-    const downloadLinks: _interface.TDownload = this.extractDownlodLinks(
-      res || "",
-    );
+    const downloadLinks = this.extractDownlodLinks(res || "<none>");
     const detail = this.extractDetail(res || "<none>");
     const genres: _interface.TGenre[] = [];
 
@@ -191,13 +174,11 @@ export class OtakuDesu
       synopsis,
       download: downloadLinks,
     };
-
     // scrape synopsis
     $(CLASS.SYNOPSIS).map((i, e) => {
       const text = $(e).text();
       synopsis.push(text === "" ? "none" : text);
     });
-
     // scrape genres
     $(CLASS.DETAIL)
       .last()
@@ -210,6 +191,43 @@ export class OtakuDesu
       });
 
     return anime;
+  }
+
+  async getAnimeList() {
+    const sortedList: _interface.TAnimeList[] = [];
+
+    const { res, err } = await wrapPromise(this.html("/anime-list"));
+    if (err) {
+      console.error(err);
+      throw err;
+    }
+    const $ = this.loadHtml(String(res));
+    const prefix: string[] = [];
+
+    $(".barispenz a").map((i, e) => {
+      prefix.push($(e).text().trim());
+    });
+    for (const p of prefix) {
+      sortedList.push({ prefix: p, anime: [] });
+    }
+    const animeList: { name: string; detail: string }[] = [];
+    $(".jdlbar ul li").map((i, e) => {
+      animeList.push({
+        name: $(e).find("a").text().trim(),
+        detail: this.urlParser.parseDetailUrl(
+          $(e).find("a").attr("href") || "<none>",
+        ),
+      });
+    });
+
+    for (const anime of animeList) {
+      const firstLetter = anime.name[0].toUpperCase();
+      const index = prefix.indexOf(firstLetter);
+      if (index !== -1) {
+        sortedList[index].anime.push(anime);
+      }
+    }
+    return sortedList;
   }
 
   private extractDownlodLinks(html: string) {
@@ -283,7 +301,7 @@ export class OtakuDesu
     }
     const $ = this.loadHtml(String(res));
     const download = this.extractDownloadProviderUrl(String(res), type);
-    const stream = $(CLASS.IFRAME_CONTAINER).attr("src") || "";
+    const stream = $(CLASS.IFRAME_CONTAINER).attr("src") || "<none>";
 
     return { download, stream };
   }

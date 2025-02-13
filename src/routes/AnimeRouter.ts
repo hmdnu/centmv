@@ -46,6 +46,11 @@ export class AnimeRouter {
       this.anime.setQueryParam(c.req.query("provider"));
       return this.anime.getDownload(c);
     });
+
+    this.app.get("/list", async (c) => {
+      this.anime.setQueryParam(c.req.query("provider"));
+      return this.anime.getAnimeList(c);
+    });
   }
 
   getInstance() {

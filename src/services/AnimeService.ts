@@ -128,4 +128,17 @@ export class AnimeService extends BaseAnimeService {
     }
     return c.json(res);
   }
+
+  async getAnimeList(c: Context) {
+    const instance = super.getProviderInstance(this.providerName);
+    if (!instance) {
+      return c.json({ error: "Provider not found" });
+    }
+    const { res, err } = await wrapPromise(instance.getAnimeList());
+    if (err) {
+      console.error(err);
+      return c.json({ error: "Internal server error" }, 505);
+    }
+    return c.json(res);
+  }
 }
