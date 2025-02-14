@@ -36,7 +36,7 @@ export class OtakuDesu extends BaseAnimeSrapper implements IAnime {
         episode: parseInt(
           $(e).find(CLASS.EPISODE).text().replace("Episode", "").trim(),
         ),
-        img: $(e).find(CLASS.IMAGE).attr("src") || "<none>",
+        img: $(e).find(CLASS.IMG_COVER_LATEST).attr("src") || "<none>",
         detail: this.urlParser.parseDetailUrl(
           $(e).find("a").attr("href") || "<none>",
         ),
@@ -50,19 +50,17 @@ export class OtakuDesu extends BaseAnimeSrapper implements IAnime {
     const { res, err } = await wrapPromise(
       this.html(`/?s=${animeTitle}&post_type=anime`),
     );
-
     if (err) {
       console.log(err);
       throw err;
     }
-
     const $ = this.loadHtml(String(res));
     const anime: _interface.TFind[] = [];
 
     $(CLASS.SEARCHED_ANIME).map((i, e) => {
       anime.push({
         name: $(e).text(),
-        img: "",
+        img: $(e).parent().prev().attr("src") || "<none>",
         detail: this.urlParser.parseDetailUrl($(e).attr("href") || "<none>"),
         status: $(e)
           .parent()
@@ -147,7 +145,7 @@ export class OtakuDesu extends BaseAnimeSrapper implements IAnime {
         episode: parseInt(
           $(e).find(CLASS.EPISODE).text().replace("Episode", "").trim(),
         ),
-        img: $(e).find(CLASS.IMAGE).attr("src") || "<none>",
+        img: $(e).find(CLASS.IMG_COVER_LATEST).attr("src") || "<none>",
         detail: this.urlParser.parseDetailUrl(
           $(e).find("a").attr("href") || "<none>",
         ),
