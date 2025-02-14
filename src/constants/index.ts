@@ -1,7 +1,8 @@
 export const SCRAPPING_CLASSES_OTAKUDESU = {
   CONTAINER: "ul li .detpost",
   NAME: ".thumbz .jdlflm",
-  IMAGE: ".thumbz img",
+  IMG_COVER_LATEST: ".thumbz img",
+  IMG_COVER_FIND: ".chivsrc img",
   EPISODE: ".epz",
   SEARCHED_ANIME: ".chivsrc h2 a",
   GENRES: ".genres li a",
