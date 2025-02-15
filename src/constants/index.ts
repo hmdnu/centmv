@@ -1,4 +1,4 @@
-export const SCRAPPING_CLASSES_OTAKUDESU = {
+export const OTAKUDESU_SELECTOR = {
   CONTAINER: "ul li .detpost",
   NAME: ".thumbz .jdlflm",
   IMG_COVER_LATEST: ".thumbz img",
@@ -21,7 +21,7 @@ export const SCRAPPING_CLASSES_OTAKUDESU = {
   },
 };
 
-export const SCRAPPING_CLASSES_ANIMASU = {
+export const ANIMASU_SELECTOR = {
   CARD: ".page .bs",
   NAME: ".tt",
   EPISODE: ".bt .epx",

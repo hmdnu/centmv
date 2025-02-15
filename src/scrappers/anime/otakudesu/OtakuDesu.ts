@@ -4,7 +4,7 @@ import { CheerioAPI, load as cheerioLoad } from "cheerio";
 import * as _interface from "@/scrappers/interface";
 import { IAnime } from "@/scrappers/interface";
 import { UrlParserOtakudesu } from "@/utils/urlParser/UrlParserOtakudesu";
-import { SCRAPPING_CLASSES_OTAKUDESU as CLASS } from "@/constants";
+import { OTAKUDESU_SELECTOR as SELECTOR } from "@/constants";
 import { BaseAnimeSrapper } from "@/structs/BaseAnimeScrapper";
 import { AnyNode } from "node_modules/domhandler/lib/esm/node";
 
@@ -30,13 +30,13 @@ export class OtakuDesu extends BaseAnimeSrapper implements IAnime {
     }
     const $ = this.loadHtml(String(res));
     const anime: _interface.TGetLatest[] = [];
-    $(CLASS.CONTAINER).map((i, e) => {
+    $(SELECTOR.CONTAINER).map((i, e) => {
       anime.push({
-        name: $(e).find(CLASS.NAME).text().trim(),
+        name: $(e).find(SELECTOR.NAME).text().trim(),
         episode: parseInt(
-          $(e).find(CLASS.EPISODE).text().replace("Episode", "").trim(),
+          $(e).find(SELECTOR.EPISODE).text().replace("Episode", "").trim(),
         ),
-        img: $(e).find(CLASS.IMG_COVER_LATEST).attr("src") || "<none>",
+        img: $(e).find(SELECTOR.IMG_COVER_LATEST).attr("src") || "<none>",
         detail: this.urlParser.parseDetailUrl(
           $(e).find("a").attr("href") || "<none>",
         ),
@@ -57,7 +57,7 @@ export class OtakuDesu extends BaseAnimeSrapper implements IAnime {
     const $ = this.loadHtml(String(res));
     const anime: _interface.TFind[] = [];
 
-    $(CLASS.SEARCHED_ANIME).map((i, e) => {
+    $(SELECTOR.SEARCHED_ANIME).map((i, e) => {
       anime.push({
         name: $(e).text(),
         img: $(e).parent().prev().attr("src") || "<none>",
@@ -86,7 +86,7 @@ export class OtakuDesu extends BaseAnimeSrapper implements IAnime {
     const $ = this.loadHtml(String(res));
     const anime: _interface.TGetByGenre[] = [];
 
-    $(CLASS.ANIME_BY_GENRE)
+    $(SELECTOR.ANIME_BY_GENRE)
       .nextAll()
       .find(".col-anime")
       .map((i, e) => {
@@ -115,7 +115,7 @@ export class OtakuDesu extends BaseAnimeSrapper implements IAnime {
     const $ = this.loadHtml(String(res));
     const genres: _interface.TGenreList[] = [];
 
-    $(CLASS.GENRES).map((i, e) => {
+    $(SELECTOR.GENRES).map((i, e) => {
       const href =
         $(e).attr("href")?.replace("genres", "anime/genre") || "<none>";
       genres.push({
@@ -139,13 +139,13 @@ export class OtakuDesu extends BaseAnimeSrapper implements IAnime {
     const anime: _interface.TComplete[] = [];
     const $ = this.loadHtml(String(res));
 
-    $(CLASS.CONTAINER).map((i, e) => {
+    $(SELECTOR.CONTAINER).map((i, e) => {
       anime.push({
-        name: $(e).find(CLASS.NAME).text().trim(),
+        name: $(e).find(SELECTOR.NAME).text().trim(),
         episode: parseInt(
-          $(e).find(CLASS.EPISODE).text().replace("Episode", "").trim(),
+          $(e).find(SELECTOR.EPISODE).text().replace("Episode", "").trim(),
         ),
-        img: $(e).find(CLASS.IMG_COVER_LATEST).attr("src") || "<none>",
+        img: $(e).find(SELECTOR.IMG_COVER_LATEST).attr("src") || "<none>",
         detail: this.urlParser.parseDetailUrl(
           $(e).find("a").attr("href") || "<none>",
         ),
@@ -175,12 +175,12 @@ export class OtakuDesu extends BaseAnimeSrapper implements IAnime {
       download: downloadLinks,
     };
     // scrape synopsis
-    $(CLASS.SYNOPSIS).map((i, e) => {
+    $(SELECTOR.SYNOPSIS).map((i, e) => {
       const text = $(e).text();
       synopsis.push(text === "" ? "none" : text);
     });
     // scrape genres
-    $(CLASS.DETAIL)
+    $(SELECTOR.DETAIL)
       .last()
       .find("a")
       .map((i, e) => {
@@ -240,10 +240,10 @@ export class OtakuDesu extends BaseAnimeSrapper implements IAnime {
 
     const $ = this.loadHtml(html);
     // batch episode
-    if ($(CLASS.DOWNLOAD_LINK_BATCH).contents().length === 0) {
+    if ($(SELECTOR.DOWNLOAD_LINK_BATCH).contents().length === 0) {
       (downloadLinks.batch as unknown as string) = "Batch is not available yet";
     } else {
-      $(CLASS.DOWNLOAD_LINK_BATCH).map((i, e) => {
+      $(SELECTOR.DOWNLOAD_LINK_BATCH).map((i, e) => {
         const episode = $(e).text();
         const download = this.urlParser.parseDownloadUrl(
           $(e).attr("href") || "",
@@ -257,7 +257,7 @@ export class OtakuDesu extends BaseAnimeSrapper implements IAnime {
     }
 
     // single episode
-    $(CLASS.DOWNLOAD_LINK_EPISODE).map((i, e) => {
+    $(SELECTOR.DOWNLOAD_LINK_EPISODE).map((i, e) => {
       downloadLinks.episode.push({
         episode: $(e).text(),
         download: this.urlParser.parseDownloadUrl($(e).attr("href") || ""),
@@ -276,7 +276,7 @@ export class OtakuDesu extends BaseAnimeSrapper implements IAnime {
     };
 
     const $ = this.loadHtml(html);
-    $(CLASS.DETAIL).map((i, e) => {
+    $(SELECTOR.DETAIL).map((i, e) => {
       anime.name = this.splitColonStringDetail($, e, 0);
       anime.type = this.splitColonStringDetail($, e, 4);
       anime.status = this.splitColonStringDetail($, e, 5);
@@ -300,7 +300,7 @@ export class OtakuDesu extends BaseAnimeSrapper implements IAnime {
     }
     const $ = this.loadHtml(String(res));
     const download = this.extractDownloadProviderUrl(String(res), type);
-    const stream = $(CLASS.IFRAME_CONTAINER).attr("src") || "<none>";
+    const stream = $(SELECTOR.IFRAME_CONTAINER).attr("src") || "<none>";
 
     return { download, stream };
   }
@@ -313,13 +313,13 @@ export class OtakuDesu extends BaseAnimeSrapper implements IAnime {
     $(downloadTypeClass).map((i, e) => {
       const providers: _interface.TDownloadProvider[] = [];
       $(e)
-        .find(CLASS.DOWNLOADS.ANCHOR)
+        .find(SELECTOR.DOWNLOADS.ANCHOR)
         .map((i, e) => {
           providers.push({ name: $(e).text(), url: $(e).attr("href") || "" });
         }),
         downloads.push({
-          resolution: $(e).find(CLASS.DOWNLOADS.RESO).text(),
-          size: $(e).find(CLASS.DOWNLOADS.SIZE).text(),
+          resolution: $(e).find(SELECTOR.DOWNLOADS.RESO).text(),
+          size: $(e).find(SELECTOR.DOWNLOADS.SIZE).text(),
           providers,
         });
     });
@@ -328,9 +328,9 @@ export class OtakuDesu extends BaseAnimeSrapper implements IAnime {
 
   private getDownloadTypeClass(type: string) {
     if (type === "episode") {
-      return CLASS.DOWNLOADS.EPISODE;
+      return SELECTOR.DOWNLOADS.EPISODE;
     } else if (type === "batch") {
-      return CLASS.DOWNLOADS.BATCH;
+      return SELECTOR.DOWNLOADS.BATCH;
     }
     return "<unknown type>";
   }
